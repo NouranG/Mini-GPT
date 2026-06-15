@@ -1,19 +1,25 @@
-import torch
+from torch.utils.data import Dataset
 
-class TextDataset:
-    def __init__(self,file_path):
-        with open(file_path,'r',encoding='utf-8') as f:
-            self.text = f.read()
 
-        chars=sorted(list(set(self.text)))
-        self.vocab_size=len(chars)
-        self.char_to_idx={ch:i for i,ch in enumerate(chars)}
-        self.idx_to_char={i:ch for i,ch in enumerate(chars)}
+class GPTDataset(Dataset):
 
-    def encode(self,text):
-        return [self.char_to_idx[ch] for ch in text]
-    def decode(self,indices):
-        return ''.join([self.idx_to_char[i] for i in indices])
-    def get_encoded_corpus(self):
-        #encoding entire corpus:
-        return torch.tensor(self.encode(self.text),dtype=torch.long)
+    def __init__(self, encoded_text, block_size):
+
+        self.data = encoded_text
+        self.block_size = block_size
+
+    def __len__(self):
+
+        return len(self.data) - self.block_size
+
+    def __getitem__(self, idx):
+
+        x = self.data[
+            idx : idx + self.block_size
+        ]
+
+        y = self.data[
+            idx + 1 : idx + self.block_size + 1
+        ]
+
+        return x, y
