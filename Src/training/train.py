@@ -1,5 +1,6 @@
 import torch
 from torch.optim import AdamW
+import tqdm
 
 from Src.model.gpt import GPT
 from Src.Preprocessor.dataset import GPTDataset
@@ -117,8 +118,13 @@ for epoch in range(epochs):
     model.train()
 
     total_loss = 0
+    progress_bar = tqdm.tqdm(
+    train_loader,
+    desc=f"Epoch {epoch+1}/{epochs}",
+    leave=True
+)
 
-    for x, y in train_loader:
+    for x, y in progress_bar:
 
         x = x.to(device)
         y = y.to(device)
@@ -132,6 +138,10 @@ for epoch in range(epochs):
         optimizer.step()
 
         total_loss += loss.item()
+
+        progress_bar.set_postfix(
+    loss=f"{loss.item():.4f}"
+)
 
     train_loss = total_loss / len(train_loader)
 
