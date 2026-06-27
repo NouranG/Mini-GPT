@@ -10,6 +10,11 @@ class TextDataset:
         self.char_to_idx={ch:i for i,ch in enumerate(chars)}
         self.idx_to_char={i:ch for i,ch in enumerate(chars)}
 
+        self.encoded_corpus = torch.tensor(
+            self.encode(self.text),
+            dtype=torch.long
+        )
+
     def encode(self,text):
         return [self.char_to_idx[ch] for ch in text]
     def decode(self,indices):
