@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from Src.Embedding.embedding import GPTEmbeddings
-from model.transformer_block import TransformerBlock
+from Src.model.transformer_block import TransformerBlock
 
 class GPT(nn.Module):
 
