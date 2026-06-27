@@ -1,44 +1,77 @@
 import torch
 from torch.optim import AdamW
 
-from model.gpt import GPT
-from Preprocessor.dataset import GPTDataset
-from Preprocessor.dataloader import create_dataloader
+from Src.model.gpt import GPT
+from Src.Preprocessor.dataset import GPTDataset
+from Src.Preprocessor.preprocess import TextDataset
+from Src.Preprocessor.dataloader import create_dataloader
+
+import yaml
+
+with open("configs/config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 # -------------------------
 # Hyperparameters
-# -------------------------
 
-batch_size = 32
-block_size = 128
-embed_dim = 256
-num_heads = 8
-num_layers = 6
-learning_rate = 3e-4
-epochs = 10
+
+embed_dim = config["model"]["embed_dim"]
+num_heads = config["model"]["num_heads"]
+block_size=config["model"]["block_size"]
+num_layers=config["model"]["num_layers"]
+
+epochs=config["training"]["epochs"]
+batch_size = config["training"]["batch_size"]
+learning_rate = config["training"]["learning_rate"]
 
 # -------------------------
 # Dataset
-# -------------------------
 
-dataset = GPTDataset(...)
+
+processor = TextDataset(config["data"]["dataset_path"])
+
+encoded = processor.encoded_corpus
+
+split_idx = int(0.9 * len(encoded))
+
+train_data = encoded[:split_idx]
+val_data = encoded[split_idx:]
+print(f"Total tokens: {len(encoded)}")
+print(f"Train tokens: {len(train_data)}")
+print(f"Validation tokens: {len(val_data)}")
+print(f"Block size: {block_size}")
+
+dataset_train = GPTDataset(
+    train_data,
+    block_size
+)
+dataset_val = GPTDataset(
+    val_data,
+    block_size
+)
 
 train_loader = create_dataloader(
-    dataset,
+    dataset_train,
     batch_size=batch_size,
     shuffle=True
+)
+val_loader = create_dataloader(
+    dataset_val,
+    batch_size=batch_size,
+    shuffle=False
 )
 
 # -------------------------
 # Model
-# -------------------------
+
+
 
 model = GPT(
-    vocab_size=dataset.vocab_size,
+    vocab_size=processor.vocab_size,
     embed_dim=embed_dim,
     num_heads=num_heads,
     block_size=block_size,
-    num_layers=num_layers
+    num_layers=num_layers,
 )
 
 optimizer = AdamW(
@@ -47,8 +80,37 @@ optimizer = AdamW(
 )
 
 # -------------------------
-# Training Loop
+# evaluation pipeline
+
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
+model = model.to(device)
+
+best_val_loss = float("inf")
+
+
+@torch.no_grad()
+def evaluate(model, dataloader, device):
+
+    model.eval()
+
+    total_loss = 0
+
+    for x, y in dataloader:
+
+        x = x.to(device)
+        y = y.to(device)
+
+        _, loss = model(x, y)
+
+        total_loss += loss.item()
+
+    return total_loss / len(dataloader)
+
 # -------------------------
+# Training Loop
 
 for epoch in range(epochs):
 
@@ -57,6 +119,9 @@ for epoch in range(epochs):
     total_loss = 0
 
     for x, y in train_loader:
+
+        x = x.to(device)
+        y = y.to(device)
 
         logits, loss = model(x, y)
 
@@ -68,7 +133,37 @@ for epoch in range(epochs):
 
         total_loss += loss.item()
 
-    print(
-        f"Epoch {epoch+1}:",
-        total_loss / len(train_loader)
+    train_loss = total_loss / len(train_loader)
+
+    val_loss = evaluate(
+        model,
+        val_loader,
+        device
     )
+
+    print(
+        f"Epoch {epoch+1}/{epochs}"
+    )
+
+    print(
+        f"Train Loss: {train_loss:.4f}"
+    )
+
+    print(
+        f"Val Loss: {val_loss:.4f}"
+    )
+
+    #saving best model    
+    if val_loss < best_val_loss:
+
+        best_val_loss = val_loss
+
+        torch.save(
+            model.state_dict(),
+            "models/best_model.pt"
+        )
+
+        print(
+            f"Saved best model "
+            f"(Validation Loss: {val_loss:.4f})"
+        )
