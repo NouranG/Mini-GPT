@@ -1,0 +1,20 @@
+model:
+  embed_dim: 256
+  num_heads: 8
+  num_layers: 6
+  block_size: 8
+
+training:
+  batch_size: 32
+  epochs: 20
+  learning_rate: 0.0003
+  weight_decay: 0.01
+
+data:
+  dataset_path: "data/input.txt"
+  train_split: 0.9
+  shuffle: true
+
+generation:
+  max_new_tokens: 200
+  temperature: 1.0
