@@ -32,6 +32,7 @@ class GPT(nn.Module):
 
         # 4. Language modeling head
         self.lm_head = nn.Linear(embed_dim, vocab_size)
+        self.block_size = block_size
 
     def forward(self, idx, targets=None):
 
@@ -54,35 +55,42 @@ class GPT(nn.Module):
         # 5. Compute loss if targets exist
         loss = None
         if targets is not None:
-            B, T, V = logits.shape
-            logits = logits.view(B * T, V)
-            targets = targets.view(B * T)
 
-            loss = F.cross_entropy(logits, targets)
+            B, T, V = logits.shape
+
+            logits_flat = logits.view(B * T, V)
+            targets_flat = targets.view(B * T)
+
+            loss = F.cross_entropy(
+                logits_flat,
+                targets_flat
+            )
 
         return logits, loss
 
     @torch.no_grad()
     def generate(self, idx, max_new_tokens):
 
-        for _ in range(max_new_tokens):
+            self.eval()
 
-            # crop context if too long
-            idx_cond = idx[:, -self.embeddings.position_embedding.num_embeddings:]
+            for _ in range(max_new_tokens):
 
-            # forward pass
-            logits, _ = self(idx_cond)
+                idx_cond = idx[:, -self.block_size:]
 
-            # focus on last token
-            logits = logits[:, -1, :]
+                logits, _ = self(idx_cond)
 
-            # probabilities
-            probs = F.softmax(logits, dim=-1)
+                logits = logits[:, -1, :]
 
-            # sample next token
-            next_token = torch.multinomial(probs, num_samples=1)
+                probs = F.softmax(logits, dim=-1)
 
-            # append
-            idx = torch.cat((idx, next_token), dim=1)
+                next_token = torch.multinomial(
+                    probs,
+                    num_samples=1
+                )
 
-        return idx
+                idx = torch.cat(
+                    (idx, next_token),
+                    dim=1
+                )
+
+            return idx
