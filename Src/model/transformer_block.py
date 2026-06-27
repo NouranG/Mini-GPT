@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from attention.multi_head_attention import MultiHeadAttention
+from Src.attention.multi_head_attention import MultiHeadAttention
 
 class FeedForward(nn.Module):
 
