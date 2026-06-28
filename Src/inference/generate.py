@@ -8,6 +8,7 @@ from Src.Preprocessor.preprocess import TextDataset
 # Load Config
 # -----------------------
 
+
 with open("configs/config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
