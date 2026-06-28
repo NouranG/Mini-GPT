@@ -13,6 +13,8 @@ class GPTEmbeddings(nn.Module):
 
         # Positional embeddings
         self.position_embedding = nn.Embedding(block_size, embed_dim)
+        self.dropout = nn.Dropout(0.1)
+
 
     def forward(self, x):
         """
