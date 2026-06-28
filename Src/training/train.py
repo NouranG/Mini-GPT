@@ -9,6 +9,9 @@ from Src.Preprocessor.dataloader import create_dataloader
 
 import yaml
 
+print(torch.cuda.is_available())
+print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
+
 with open("configs/config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
@@ -61,7 +64,8 @@ val_loader = create_dataloader(
     batch_size=batch_size,
     shuffle=False
 )
-
+print(len(dataset_train))
+print(len(dataset_val))
 # -------------------------
 # Model
 
