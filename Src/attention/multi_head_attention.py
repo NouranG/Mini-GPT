@@ -71,4 +71,6 @@ class MultiHeadAttention(nn.Module):
         # 9. Final projection
         out = self.out_proj(out)
 
+        self.dropout = nn.Dropout(0.1)
+
         return out
